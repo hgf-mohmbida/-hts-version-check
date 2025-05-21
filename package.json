@@ -1,0 +1,11 @@
+{
+  "name": "hts-version-check",
+  "version": "1.0.0",
+  "scripts": {
+    "install-deps": "npx playwright install",
+    "get-version": "node getVersion.js"
+  },
+  "dependencies": {
+    "playwright": "^1.43.0"
+  }
+}
