@@ -4,32 +4,36 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'HTS Environment (mirror or prerelease)'
+        description: "HTS Environment (mirror | prerelease)"
         required: true
         default: mirror
 
 jobs:
   check-version:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Set up Node
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Install Playwright
-        run: npx playwright install
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps               #  <-- neuer Step!
 
-      - name: Run Playwright script to fetch version
+      - name: Run Playwright script
         env:
-          HTS_USERNAME_MIRROR: ${{ secrets.HTS_USERNAME_MIRROR }}
-          HTS_PASSWORD_MIRROR: ${{ secrets.HTS_PASSWORD_MIRROR }}
+          HTS_USERNAME_MIRROR:     ${{ secrets.HTS_USERNAME_MIRROR }}
+          HTS_PASSWORD_MIRROR:     ${{ secrets.HTS_PASSWORD_MIRROR }}
           HTS_USERNAME_PRERELEASE: ${{ secrets.HTS_USERNAME_PRERELEASE }}
           HTS_PASSWORD_PRERELEASE: ${{ secrets.HTS_PASSWORD_PRERELEASE }}
         run: node getVersion.js ${{ github.event.inputs.environment }}
+
+
+
 

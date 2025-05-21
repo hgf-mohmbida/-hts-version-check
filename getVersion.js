@@ -1,7 +1,8 @@
-const { chromium } = require('playwright');
+// getVersion.js
+const { chromium } = require('playwright');      // 1️⃣ Playwright API
 
 (async () => {
-  const env = process.argv[2]; // 'mirror' or 'prerelease'
+  const env = process.argv[2];                   // mirror | prerelease
 
   const config = {
     mirror: {
@@ -17,23 +18,31 @@ const { chromium } = require('playwright');
   };
 
   if (!env || !config[env]) {
-    console.error("Please provide 'mirror' or 'prerelease' as argument.");
+    console.error('Please call with "mirror" or "prerelease"');
     process.exit(1);
   }
 
   const { url, username, password } = config[env];
 
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
-  await page.goto(url);
+  const page     = await browser.newPage();
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-  await page.fill('input[name="serialNumber"]', username);
-  await page.fill('input[name="password"]', password);
-  await page.click('button:has-text("Anmelden")');
+  /* -----  🔑  Login  ----- */
+  await page.fill('input[type="text"]',  username);   // erstes Textfeld = Serien-Nr.
+  await page.fill('input[type="password"]', password);
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'networkidle' }),
+    page.click('button:has-text("Anmelden")')
+  ]);
 
-  await page.waitForSelector('#ext-gen1119');
-  const version = await page.textContent('#ext-gen1119');
+  /* -----  🔍  Version auslesen  ----- */
+  // Footer-Span hat die ID, die im DevTools-Screenshot sichtbar war:
+  const selector = '#footerInfo-statusvalueVersion';
+  await page.waitForSelector(selector, { timeout: 15000 });
+  const version = await page.textContent(selector);
 
   console.log(`Version from ${env}: ${version}`);
   await browser.close();
 })();
+
