@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install Playwright
+        run: npx playwright install
+
       - name: Run Playwright script to fetch version
         env:
           HTS_USERNAME_MIRROR: ${{ secrets.HTS_USERNAME_MIRROR }}
@@ -29,3 +32,4 @@ jobs:
           HTS_USERNAME_PRERELEASE: ${{ secrets.HTS_USERNAME_PRERELEASE }}
           HTS_PASSWORD_PRERELEASE: ${{ secrets.HTS_PASSWORD_PRERELEASE }}
         run: node getVersion.js ${{ github.event.inputs.environment }}
+
