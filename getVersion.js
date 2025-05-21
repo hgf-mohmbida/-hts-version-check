@@ -1,48 +1,44 @@
 // getVersion.js
-const { chromium } = require('playwright');      // 1️⃣ Playwright API
+const { chromium } = require('playwright');
 
 (async () => {
-  const env = process.argv[2];                   // mirror | prerelease
+  const env = (process.argv[2] || '').toLowerCase();
 
-  const config = {
+  const cfg = {
     mirror: {
-      url: 'https://mirror.hogrefe-ws.com/HTSMirror/main#',
-      username: process.env.HTS_USERNAME_MIRROR,
-      password: process.env.HTS_PASSWORD_MIRROR
+      url:  'https://mirror.hogrefe-ws.com/HTSMirror/main#',
+      user: process.env.HTS_USERNAME_MIRROR,
+      pass: process.env.HTS_PASSWORD_MIRROR,
     },
     prerelease: {
-      url: 'https://eval.hogrefe-ws.com/HTSPrerelease/main#',
-      username: process.env.HTS_USERNAME_PRERELEASE,
-      password: process.env.HTS_PASSWORD_PRERELEASE
-    }
+      url:  'https://eval.hogrefe-ws.com/HTSPrerelease/main#',
+      user: process.env.HTS_USERNAME_PRERELEASE,
+      pass: process.env.HTS_PASSWORD_PRERELEASE,
+    },
   };
 
-  if (!env || !config[env]) {
-    console.error('Please call with "mirror" or "prerelease"');
-    process.exit(1);
-  }
+  if (!cfg[env]) { console.error('arg: mirror | prerelease'); process.exit(1); }
 
-  const { url, username, password } = config[env];
+  const { url, user, pass } = cfg[env];
 
   const browser = await chromium.launch({ headless: true });
-  const page     = await browser.newPage();
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const page    = await browser.newPage();
 
-  /* -----  🔑  Login  ----- */
-  await page.fill('input[type="text"]',  username);   // erstes Textfeld = Serien-Nr.
-  await page.fill('input[type="password"]', password);
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle' }),
-    page.click('button:has-text("Anmelden")')
-  ]);
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
 
-  /* -----  🔍  Version auslesen  ----- */
-  // Footer-Span hat die ID, die im DevTools-Screenshot sichtbar war:
-  const selector = '#footerInfo-statusvalueVersion';
-  await page.waitForSelector(selector, { timeout: 15000 });
-  const version = await page.textContent(selector);
+    await page.fill('input[type="text"]',     user);
+    await page.fill('input[type="password"]', pass);
 
-  console.log(`Version from ${env}: ${version}`);
-  await browser.close();
+    await Promise.all([
+      page.waitForSelector('#footerInfo-statusvalueVersion', { timeout: 15_000 }),
+      page.click('button:has-text("Anmelden")'),
+    ]);
+
+    const version = await page.textContent('#footerInfo-statusvalueVersion');
+    console.log(version.trim());
+  } finally {
+    await browser.close();
+  }
 })();
 
